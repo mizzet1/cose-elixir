@@ -21,7 +21,8 @@ defmodule COSE.MixProject do
     [
       {:b58, "~> 1.0"},
       {:cbor, "~> 1.0.0"},
-      {:hkdf_erlang, "~> 0.1.1"}
+      {:hkdf_erlang, "~> 0.1.1"},
+      {:typed_ecto_schema, "~> 0.4"}
     ]
   end
 end
