@@ -1,6 +1,7 @@
 defprotocol COSE.Keys.Key do
   def sign(key, digest_type, to_be_signed)
   def verify(key, digest_type, to_be_verified, signature)
+  def encode(key)
 end
 
 defmodule COSE.Keys do
@@ -15,6 +16,10 @@ defmodule COSE.Keys do
 
   def verify(key, digest_type, to_be_verified, signature),
     do: Key.verify(key, digest_type, to_be_verified, signature)
+
+  def encode(key), do: Key.encode(key)
+
+  def encode_cbor(key), do: encode(key) |> CBOR.encode()
 
   def from_pem(pem, password \\ "") do
     pem

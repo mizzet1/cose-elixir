@@ -105,6 +105,11 @@ end
 defimpl COSE.Keys.Key, for: COSE.Keys.ECC do
   alias COSE.Keys.ECC
 
+  @kty 1
+  @crv -1
+  @x -2
+  @y -3
+
   def sign(key, digest_type, to_be_signed) do
     curve = ECC.curve(key)
 
@@ -128,6 +133,8 @@ defimpl COSE.Keys.Key, for: COSE.Keys.ECC do
       _ -> {:error, :invalid_signature}
     end
   end
+
+  def encode(key), do: %{@kty => key.kty, @crv => key.crv, @x => key.x, @y => key.y}
 
   def raw_to_der(raw_sig, key_size) do
     case raw_sig do
