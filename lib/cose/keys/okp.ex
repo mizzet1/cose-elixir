@@ -25,6 +25,10 @@ defmodule COSE.Keys.OKP do
 end
 
 defimpl COSE.Keys.Key, for: COSE.Keys.OKP do
+  @kty 1
+  @crv -1
+  @x -2
+
   def sign(key, digest_type, to_be_signed) do
     signature = :crypto.sign(:eddsa, digest_type, to_be_signed, [key.d, :ed25519])
     {:ok, signature}
@@ -36,4 +40,6 @@ defimpl COSE.Keys.Key, for: COSE.Keys.OKP do
       false -> {:error, :invalid_signature}
     end
   end
+
+  def encode(key), do: %{@kty => key.kty, @crv => key.crv, @x => key.x}
 end
