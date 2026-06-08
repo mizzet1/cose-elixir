@@ -26,6 +26,21 @@ defmodule COSETest do
     assert map[-3] == key.y
   end
 
+  test "encode okp key to map" do
+    key = Keys.OKP.generate(:sig)
+    map = Keys.encode(key)
+
+    assert map[-2] == key.x
+    refute Map.has_key?(map, -4)
+  end
+
+  test "encode okp key to cbor" do
+    key = Keys.OKP.generate(:sig)
+    {:ok, map, ""} = CBOR.decode(Keys.encode_cbor(key))
+
+    assert map[-2] == key.x
+  end
+
   test "encode headers" do
     assert Headers.translate(%{alg: :eddsa}) == %{1 => -8}
     assert Headers.translate(%{alg: :aes_ccm_16_64_128}) == %{1 => 10}
