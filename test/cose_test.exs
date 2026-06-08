@@ -41,6 +41,23 @@ defmodule COSETest do
     assert map[-2] == key.x
   end
 
+  test "encode rsa key to map" do
+    key = Keys.RSA.generate(:rs256)
+    map = Keys.encode(key)
+
+    assert map[-1] == key.n
+    assert map[-2] == key.e
+    refute Map.has_key?(map, -3)
+  end
+
+  test "encode rsa key to cbor" do
+    key = Keys.RSA.generate(:rs256)
+    {:ok, map, ""} = CBOR.decode(Keys.encode_cbor(key))
+
+    assert map[-1] == key.n
+    assert map[-2] == key.e
+  end
+
   test "encode headers" do
     assert Headers.translate(%{alg: :eddsa}) == %{1 => -8}
     assert Headers.translate(%{alg: :aes_ccm_16_64_128}) == %{1 => 10}
