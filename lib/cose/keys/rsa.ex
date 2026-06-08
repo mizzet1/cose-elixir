@@ -86,6 +86,10 @@ defmodule COSE.Keys.RSA do
 end
 
 defimpl COSE.Keys.Key, for: COSE.Keys.RSA do
+  @kty 1
+  @n -1
+  @e -2
+
   def sign(key, digest_type, to_be_signed) do
     private_key =
       [key.e, key.n, key.d]
@@ -102,4 +106,6 @@ defimpl COSE.Keys.Key, for: COSE.Keys.RSA do
       false -> {:error, :invalid_signature}
     end
   end
+
+  def encode(key), do: %{@kty => key.kty, @n => key.n, @e => key.e}
 end
