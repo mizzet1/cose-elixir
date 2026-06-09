@@ -1,5 +1,49 @@
 defmodule COSE.Keys.ECC do
+  @moduledoc """
+  COSE EC2 (Elliptic Curve) key type.
+
+  COSE integer labels follow RFC 9052. After a CBOR round-trip, atom values
+  (`:ecc`, `:p256`) come back as binary strings (`"ecc"`, `"p256"`).
+  Each clause validates the key material (coordinate sizes) as part of
+  the parse step, so no separate validation is needed by the caller.
+  """
+
   defstruct [:kty, :kid, :alg, :key_ops, :base_iv, :pem_record, :crv, :x, :y, :d]
+
+  # COSE Key common parameter labels (RFC 9052 §7.1)
+  @kty 1
+  @crv -1
+
+  # COSE EC2 key parameter labels (RFC 9052 §7.1.1)
+  @x -2
+  @y -3
+
+  # COSE Key type values (after CBOR round-trip, atoms → strings)
+  @kty_ec2 to_string(:ecc)
+
+  # COSE EC2 curve values (RFC 9052 §7.2)
+  @crv_p256 to_string(:p256)
+
+  # Expected byte length of a P-256 coordinate (RFC 6090)
+  @p256_coord_size 32
+
+  @doc """
+  Parses a decoded COSE_Key map into a typed COSE key struct.
+
+  Dispatches on `kty` and `crv`. Each clause embeds the coordinate-size
+  validation for that specific curve, so callers do not need a
+  separate validation step.
+
+  Returns `{:ok, key}` on success or `{:error, :invalid_cose_key}`.
+  """
+  @spec from_cbor_map(map()) :: {:ok, %__MODULE__{}} | {:error, :invalid_cose_key}
+  def from_cbor_map(%{@kty => @kty_ec2, @crv => @crv_p256, @x => x, @y => y})
+      when is_binary(x) and byte_size(x) == @p256_coord_size and
+             is_binary(y) and byte_size(y) == @p256_coord_size do
+    {:ok, %__MODULE__{kty: :ecc, crv: :p256, alg: :es256, x: x, y: y}}
+  end
+
+  def from_cbor_map(_), do: {:error, :invalid_cose_key}
 
   @doc """
   Generates a key for the specified algorithm.
