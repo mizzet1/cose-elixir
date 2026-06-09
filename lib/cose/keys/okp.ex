@@ -1,5 +1,47 @@
 defmodule COSE.Keys.OKP do
+  @moduledoc """
+  COSE OKP (Octet Key Pair) key type.
+
+  COSE integer labels follow RFC 9052. After a CBOR round-trip, atom values
+  (`:okp`, `:x25519`) come back as binary strings (`"okp"`, `"x25519"`).
+  Each clause validates the key material (e.g. coordinate size) as part of
+  the parse step, so no separate validation is needed by the caller.
+  """
+
   defstruct [:kty, :kid, :alg, :key_ops, :base_iv, :crv, :x, :d]
+
+  # COSE Key common parameter labels (RFC 9052 §7.1)
+  @kty 1
+  @crv -1
+
+  # COSE Key type values (after CBOR round-trip, atoms → strings)
+  @kty_okp to_string(:okp)
+
+  # COSE OKP curve values (RFC 9052 §7.2)
+  @crv_x25519 to_string(:x25519)
+
+  # COSE OKP key parameter: public key x coordinate
+  @x -2
+
+  # Expected byte length of an X25519 public key (RFC 7748 §6.1)
+  @x25519_key_size 32
+
+  @doc """
+  Parses a decoded COSE_Key map into a typed COSE key struct.
+
+  Dispatches on `kty` and `crv`. Each clause embeds the key-size
+  validation for that specific algorithm, so callers do not need a
+  separate validation step.
+
+  Returns `{:ok, key}` on success or `{:error, :invalid_cose_key}`.
+  """
+  @spec from_cbor_map(map()) :: {:ok, %__MODULE__{}} | {:error, :invalid_cose_key}
+  def from_cbor_map(%{@kty => @kty_okp, @crv => @crv_x25519, @x => x})
+      when is_binary(x) and byte_size(x) == @x25519_key_size do
+    {:ok, %__MODULE__{kty: :okp, crv: :x25519, x: x}}
+  end
+
+  def from_cbor_map(_), do: {:error, :invalid_cose_key}
 
   def generate(:enc) do
     {x, d} = :crypto.generate_key(:eddh, :x25519)
