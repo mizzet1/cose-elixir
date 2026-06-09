@@ -19,6 +19,10 @@ defmodule COSE.Keys do
 
   def encode(key), do: Key.encode(key)
 
+  @kty 1
+  def decode(%{@kty => 2} = map), do: ECC.decode(map)
+  def decode(_), do: {:error, :invalid_cose_key}
+
   def encode_cbor(key), do: encode(key) |> CBOR.encode()
 
   def from_pem(pem, password \\ "") do
