@@ -7,6 +7,7 @@ end
 defmodule COSE.Keys do
   alias COSE.Keys.ECC
   alias COSE.Keys.Key
+  alias COSE.Keys.OKP
   alias COSE.Keys.RSA
 
   @oid_rsa {1, 2, 840, 113_549, 1, 1, 1}
@@ -21,6 +22,7 @@ defmodule COSE.Keys do
 
   @kty 1
   def decode(%{@kty => 2} = map), do: ECC.decode(map)
+  def decode(%{@kty => 1} = map), do: OKP.decode(map)
   def decode(_), do: {:error, :invalid_cose_key}
 
   def encode_cbor(key), do: encode(key) |> CBOR.encode()
