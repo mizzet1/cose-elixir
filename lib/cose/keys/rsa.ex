@@ -107,5 +107,5 @@ defimpl COSE.Keys.Key, for: COSE.Keys.RSA do
     end
   end
 
-  def encode(key), do: %{@kty => key.kty, @n => key.n, @e => key.e}
+  def encode(key), do: %{@kty => 3, @n => key.n, @e => key.e}
 end

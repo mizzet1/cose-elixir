@@ -29,6 +29,8 @@ defimpl COSE.Keys.Key, for: COSE.Keys.OKP do
   @crv -1
   @x -2
 
+  @crv_enum Ecto.ParameterizedType.init(Ecto.Enum, values: [x25519: 4, ed25519: 6])
+
   def sign(key, digest_type, to_be_signed) do
     signature = :crypto.sign(:eddsa, digest_type, to_be_signed, [key.d, :ed25519])
     {:ok, signature}
@@ -41,5 +43,11 @@ defimpl COSE.Keys.Key, for: COSE.Keys.OKP do
     end
   end
 
-  def encode(key), do: %{@kty => key.kty, @crv => key.crv, @x => key.x}
+  def encode(key),
+    do: %{@kty => 1, @crv => encode_crv(key.crv), @x => key.x}
+
+  defp encode_crv(crv) do
+    {:ok, int} = Ecto.Type.dump(@crv_enum, crv)
+    int
+  end
 end
