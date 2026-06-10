@@ -1,5 +1,45 @@
 defmodule COSE.Keys.OKP do
+  @moduledoc """
+  COSE OKP (Octet Key Pair) key type.
+
+  COSE integer labels follow RFC 9052. After a CBOR round-trip, atom values
+  (`:okp`, `:x25519`) come back as binary strings (`"okp"`, `"x25519"`).
+  """
+
   defstruct [:kty, :kid, :alg, :key_ops, :base_iv, :crv, :x, :d]
+
+  @crv_enum Ecto.ParameterizedType.init(Ecto.Enum, values: [x25519: 4, ed25519: 6])
+
+  # COSE Key common parameter labels (RFC 9052 §7.1)
+  @kty 1
+  @crv -1
+
+  # COSE Key type value: OKP = 1
+  @kty_okp 1
+
+  # COSE OKP key parameter: public key x coordinate
+  @x -2
+
+  # Expected byte length of an X25519 public key (RFC 7748 §6.1)
+  @x25519_key_size 32
+
+  @doc """
+  Parses a decoded COSE_Key map into a typed COSE key struct.
+
+  Dispatches on `kty` and `crv`. Each clause embeds the key-size
+  validation for that specific algorithm
+  """
+  @spec decode(map()) :: {:ok, %__MODULE__{}} | {:error, :invalid_cose_key}
+  def decode(%{@kty => @kty_okp, @crv => crv_int, @x => x})
+      when is_binary(x) and byte_size(x) == @x25519_key_size do
+    with {:ok, crv_atom} <- Ecto.Type.load(@crv_enum, crv_int) do
+      {:ok, %__MODULE__{kty: :okp, crv: crv_atom, x: x}}
+    else
+      _ -> {:error, :invalid_cose_key}
+    end
+  end
+
+  def decode(_), do: {:error, :invalid_cose_key}
 
   def generate(:enc) do
     {x, d} = :crypto.generate_key(:eddh, :x25519)

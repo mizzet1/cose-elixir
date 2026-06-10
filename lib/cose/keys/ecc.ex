@@ -5,6 +5,15 @@ defmodule COSE.Keys.ECC do
   Generates a key for the specified algorithm.
   Supported: :es256 (P-256), :es384 (P-384)
   """
+
+  @crv_enum Ecto.ParameterizedType.init(Ecto.Enum, values: [p256: 1, p384: 2])
+
+  @kty 1
+  @crv -1
+  @x -2
+  @y -3
+  @kty_ec2 2
+
   def generate(alg) do
     {curve, cose_crv, key_len} = get_curve_info(alg)
     {pub, priv} = :crypto.generate_key(:ecdh, curve)
@@ -20,6 +29,24 @@ defmodule COSE.Keys.ECC do
       d: priv
     }
   end
+
+  def decode(%{@kty => @kty_ec2, @crv => crv_int, @x => x, @y => y})
+      when is_binary(x) and is_binary(y) do
+    with {:ok, crv_atom} <- Ecto.Type.load(@crv_enum, crv_int) do
+      alg = %{p256: :es256, p384: :es384}[crv_atom]
+      {_, _, expected_len} = get_curve_info(alg)
+
+      if byte_size(x) == expected_len and byte_size(y) == expected_len do
+        {:ok, %__MODULE__{kty: :ecc, crv: crv_atom, alg: alg, x: x, y: y}}
+      else
+        {:error, :invalid_cose_key}
+      end
+    else
+      _ -> {:error, :invalid_cose_key}
+    end
+  end
+
+  def decode(_), do: {:error, :invalid_cose_key}
 
   def from_record(pem_record) do
     {:ECPrivateKey, _, priv_d, {:namedCurve, oid}, pub_bits, _} = pem_record
@@ -105,12 +132,12 @@ end
 defimpl COSE.Keys.Key, for: COSE.Keys.ECC do
   alias COSE.Keys.ECC
 
+  @crv_enum Ecto.ParameterizedType.init(Ecto.Enum, values: [p256: 1, p384: 2])
+
   @kty 1
   @crv -1
   @x -2
   @y -3
-
-  @crv_enum Ecto.ParameterizedType.init(Ecto.Enum, values: [p256: 1, p384: 2])
 
   def sign(key, digest_type, to_be_signed) do
     curve = ECC.curve(key)
