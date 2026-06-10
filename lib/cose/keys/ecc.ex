@@ -110,6 +110,8 @@ defimpl COSE.Keys.Key, for: COSE.Keys.ECC do
   @x -2
   @y -3
 
+  @crv_enum Ecto.ParameterizedType.init(Ecto.Enum, values: [p256: 1, p384: 2])
+
   def sign(key, digest_type, to_be_signed) do
     curve = ECC.curve(key)
 
@@ -134,7 +136,13 @@ defimpl COSE.Keys.Key, for: COSE.Keys.ECC do
     end
   end
 
-  def encode(key), do: %{@kty => key.kty, @crv => key.crv, @x => key.x, @y => key.y}
+  def encode(key),
+    do: %{@kty => 2, @crv => encode_crv(key.crv), @x => key.x, @y => key.y}
+
+  defp encode_crv(crv) do
+    {:ok, int} = Ecto.Type.dump(@crv_enum, crv)
+    int
+  end
 
   def raw_to_der(raw_sig, key_size) do
     case raw_sig do
