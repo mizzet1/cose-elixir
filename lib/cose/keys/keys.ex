@@ -7,10 +7,20 @@ end
 defmodule COSE.Keys do
   alias COSE.Keys.ECC
   alias COSE.Keys.Key
+  alias COSE.Keys.OKP
   alias COSE.Keys.RSA
 
   @oid_rsa {1, 2, 840, 113_549, 1, 1, 1}
   @oid_ec {1, 2, 840, 10045, 2, 1}
+
+  @kty 1
+  @kty_ec2 2
+  @kty_okp 1
+
+  @spec decode(map()) :: {:ok, struct()} | {:error, :invalid_cose_key}
+  def decode(%{@kty => @kty_ec2} = cose_key), do: ECC.decode(cose_key)
+  def decode(%{@kty => @kty_okp} = cose_key), do: OKP.decode(cose_key)
+  def decode(_), do: {:error, :invalid_cose_key}
 
   def sign(key, digest_type, to_be_signed), do: Key.sign(key, digest_type, to_be_signed)
 

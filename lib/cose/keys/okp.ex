@@ -43,6 +43,36 @@ defmodule COSE.Keys.OKP do
 
   def from_cbor_map(_), do: {:error, :invalid_cose_key}
 
+  @doc """
+  Parses a wire-format COSE_Key map (integer labels, coordinates optionally
+  wrapped in `%CBOR.Tag{tag: :bytes}`) into a typed COSE key struct.
+
+  Returns `{:ok, key}` on success or `{:error, :invalid_cose_key}`.
+  """
+  @spec decode(map()) :: {:ok, %__MODULE__{}} | {:error, :invalid_cose_key}
+  def decode(%{@kty => 1, @crv => crv} = cose_key) do
+    with {:ok, cose_crv} <- crv_from_label(crv),
+         {:ok, x} <- fetch_coord(cose_key, @x) do
+      {:ok, %__MODULE__{kty: :okp, crv: cose_crv, x: x}}
+    else
+      _ -> {:error, :invalid_cose_key}
+    end
+  end
+
+  def decode(_), do: {:error, :invalid_cose_key}
+
+  defp crv_from_label(4), do: {:ok, :x25519}
+  defp crv_from_label(6), do: {:ok, :ed25519}
+  defp crv_from_label(_), do: :error
+
+  defp fetch_coord(cose_key, label) do
+    case Map.get(cose_key, label) do
+      %CBOR.Tag{tag: :bytes, value: bin} when is_binary(bin) -> {:ok, bin}
+      bin when is_binary(bin) -> {:ok, bin}
+      _ -> :error
+    end
+  end
+
   def generate(:enc) do
     {x, d} = :crypto.generate_key(:eddh, :x25519)
 

@@ -46,6 +46,26 @@ defmodule COSE.Keys.ECC do
   def from_cbor_map(_), do: {:error, :invalid_cose_key}
 
   @doc """
+  Parses a wire-format COSE_Key map (integer labels, coordinates optionally
+  wrapped in `%CBOR.Tag{tag: :bytes}`) into a typed COSE key struct.
+
+  Returns `{:ok, key}` on success or `{:error, :invalid_cose_key}`.
+  """
+  @spec decode(map()) :: {:ok, %__MODULE__{}} | {:error, :invalid_cose_key}
+  def decode(%{@kty => 2, @crv => crv} = cose_key) do
+    with {:ok, alg} <- alg_from_crv_label(crv),
+         {_curve, cose_crv, key_len} <- get_curve_info(alg),
+         {:ok, x} <- fetch_coord(cose_key, @x, key_len),
+         {:ok, y} <- fetch_coord(cose_key, @y, key_len) do
+      {:ok, %__MODULE__{kty: :ecc, crv: cose_crv, alg: alg, x: x, y: y}}
+    else
+      _ -> {:error, :invalid_cose_key}
+    end
+  end
+
+  def decode(_), do: {:error, :invalid_cose_key}
+
+  @doc """
   Generates a key for the specified algorithm.
   Supported: :es256 (P-256), :es384 (P-384)
   """
@@ -135,6 +155,21 @@ defmodule COSE.Keys.ECC do
 
   defp get_curve_info(:es256), do: {:secp256r1, :p256, 32}
   defp get_curve_info(:es384), do: {:secp384r1, :p384, 48}
+
+  defp alg_from_crv_label(1), do: {:ok, :es256}
+  defp alg_from_crv_label(2), do: {:ok, :es384}
+  defp alg_from_crv_label(_), do: :error
+
+  defp fetch_coord(cose_key, label, size) do
+    case Map.get(cose_key, label) do
+      %CBOR.Tag{tag: :bytes, value: bin} -> check_coord_size(bin, size)
+      bin when is_binary(bin) -> check_coord_size(bin, size)
+      _ -> :error
+    end
+  end
+
+  defp check_coord_size(bin, size) when is_binary(bin) and byte_size(bin) == size, do: {:ok, bin}
+  defp check_coord_size(_bin, _size), do: :error
 
   defp bitstring_to_binary(val) when is_binary(val), do: val
 
