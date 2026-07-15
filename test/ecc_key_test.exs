@@ -11,7 +11,13 @@ defmodule COSETest.ECCKey do
   describe "ECC.decode/1" do
     test "accepts a valid P-256 COSE_Key map" do
       key = ECC.generate(:es256)
-      cbor_map = %{@kty => 2, @crv => 1, @x => key.x, @y => key.y}
+
+      cbor_map = %{
+        @kty => 2,
+        @crv => 1,
+        @x => %CBOR.Tag{tag: :bytes, value: key.x},
+        @y => %CBOR.Tag{tag: :bytes, value: key.y}
+      }
 
       assert {:ok, parsed} = ECC.decode(cbor_map)
       assert parsed.kty == :ecc
@@ -25,9 +31,16 @@ defmodule COSETest.ECCKey do
       cbor_map = %{
         @kty => 2,
         @crv => 1,
-        @x => :binary.copy(<<0>>, 31),
-        @y => :binary.copy(<<0>>, 32)
+        @x => %CBOR.Tag{tag: :bytes, value: :binary.copy(<<0>>, 31)},
+        @y => %CBOR.Tag{tag: :bytes, value: :binary.copy(<<0>>, 32)}
       }
+
+      assert {:error, :invalid_cose_key} = ECC.decode(cbor_map)
+    end
+
+    test "rejects coordinates encoded as CBOR text strings instead of byte strings" do
+      key = ECC.generate(:es256)
+      cbor_map = %{@kty => 2, @crv => 1, @x => key.x, @y => key.y}
 
       assert {:error, :invalid_cose_key} = ECC.decode(cbor_map)
     end

@@ -30,7 +30,12 @@ defmodule COSE.Keys.ECC do
     }
   end
 
-  def decode(%{@kty => @kty_ec2, @crv => crv_int, @x => x, @y => y})
+  def decode(%{
+        @kty => @kty_ec2,
+        @crv => crv_int,
+        @x => %CBOR.Tag{tag: :bytes, value: x},
+        @y => %CBOR.Tag{tag: :bytes, value: y}
+      })
       when is_binary(x) and is_binary(y) do
     with {:ok, crv_atom} <- Ecto.Type.load(@crv_enum, crv_int) do
       alg = %{p256: :es256, p384: :es384}[crv_atom]
@@ -164,7 +169,12 @@ defimpl COSE.Keys.Key, for: COSE.Keys.ECC do
   end
 
   def encode(key),
-    do: %{@kty => 2, @crv => encode_crv(key.crv), @x => key.x, @y => key.y}
+    do: %{
+      @kty => 2,
+      @crv => encode_crv(key.crv),
+      @x => %CBOR.Tag{tag: :bytes, value: key.x},
+      @y => %CBOR.Tag{tag: :bytes, value: key.y}
+    }
 
   defp encode_crv(crv) do
     {:ok, int} = Ecto.Type.dump(@crv_enum, crv)
