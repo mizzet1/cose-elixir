@@ -13,8 +13,8 @@ defmodule COSETest do
     key = Keys.ECC.generate(:es256)
     map = Keys.encode(key)
 
-    assert map[-2] == key.x
-    assert map[-3] == key.y
+    assert map[-2] == %CBOR.Tag{tag: :bytes, value: key.x}
+    assert map[-3] == %CBOR.Tag{tag: :bytes, value: key.y}
     refute Map.has_key?(map, -4)
   end
 
@@ -22,15 +22,15 @@ defmodule COSETest do
     key = Keys.ECC.generate(:es256)
     {:ok, map, ""} = CBOR.decode(Keys.encode_cbor(key))
 
-    assert map[-2] == key.x
-    assert map[-3] == key.y
+    assert map[-2] == %CBOR.Tag{tag: :bytes, value: key.x}
+    assert map[-3] == %CBOR.Tag{tag: :bytes, value: key.y}
   end
 
   test "encode okp key to map" do
     key = Keys.OKP.generate(:sig)
     map = Keys.encode(key)
 
-    assert map[-2] == key.x
+    assert map[-2] == %CBOR.Tag{tag: :bytes, value: key.x}
     refute Map.has_key?(map, -4)
   end
 
@@ -38,7 +38,7 @@ defmodule COSETest do
     key = Keys.OKP.generate(:sig)
     {:ok, map, ""} = CBOR.decode(Keys.encode_cbor(key))
 
-    assert map[-2] == key.x
+    assert map[-2] == %CBOR.Tag{tag: :bytes, value: key.x}
   end
 
   test "encode rsa key to map" do
